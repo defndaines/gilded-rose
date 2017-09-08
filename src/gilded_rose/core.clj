@@ -4,7 +4,7 @@
 
 ;; Records
 
-(defrecord Item [name sell-in quality])
+(defrecord Item [name sell-in quality type])
 
 (defrecord AgedItem [item])
 
@@ -16,7 +16,9 @@
 (defrule age-items-still-in-sell-by
   "Age an item not passed is sell-in day."
   [?item <- Item
-   (< -1 sell-in)]
+   (< 0 sell-in)
+   (= :normal type)]
+
   =>
   (insert! (->AgedItem (-> ?item
                            (update :sell-in dec)
@@ -26,11 +28,30 @@
 (defrule passed-sell-by-quality-degrades-faster
   "Once the sell by date has passed, Quality degrades twice as fast."
   [?item <- Item
-   (< sell-in 0)]
+   (<= sell-in 0)]
   =>
   (insert! (->AgedItem (-> ?item
                            (update :sell-in dec)
                            (update :quality - 2)))))
+
+
+(defrule aged-brie-improves-with-age
+  "Aged Brie actually increases in quality the older it gets."
+  [?item <- Item
+   (= "Aged Brie" name)]
+  =>
+  (insert! (->AgedItem (-> ?item
+                           (update :sell-in dec)
+                           (update :quality inc)))))
+
+
+(defrule sulfuras-legendary-item
+  "Sulfuras, being a legendary item, never has to be sold or decreases in
+  quality."
+  [?item <- Item
+   (= "Sulfuras" name)]
+  =>
+  (insert! (->AgedItem ?item)))
 
 
 (defrule quality-from-zero-check
@@ -58,6 +79,7 @@
   [:test (< 50 ?quality)]
   =>
   (insert! (->QualityAssurance (assoc (:item ?item) :quality 50))))
+
 
 ;; Queries
 
