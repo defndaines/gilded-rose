@@ -37,7 +37,7 @@
   "The Quality of an item is never negative."
   [?item <- AgedItem [{{quality :quality} :item}]
    (= ?quality quality)]
-  [:test (<= 0 ?quality)]
+  [:test (<= 0 ?quality 50)]
   =>
   (insert! (->QualityAssurance (:item ?item))))
 
@@ -48,8 +48,16 @@
    (= ?quality quality)]
   [:test (< ?quality 0)]
   =>
-  (insert! (->QualityAssurance (assoc (:item ?item) :quality) 0)))
+  (insert! (->QualityAssurance (assoc (:item ?item) :quality 0))))
 
+
+(defrule quality-cannot-be-greater-than-fifty
+  "The Quality of an item is never more than 50."
+  [?item <- AgedItem [{{quality :quality} :item}]
+   (= ?quality quality)]
+  [:test (< 50 ?quality)]
+  =>
+  (insert! (->QualityAssurance (assoc (:item ?item) :quality 50))))
 
 ;; Queries
 
