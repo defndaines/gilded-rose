@@ -2,27 +2,58 @@
   (:require [clara.rules :refer :all]))
 
 
-;; Clara Rules Example Code:
+;; Records
 
-(defrecord SupportRequest [client level])
+(defrecord Item [name sell-in quality])
 
-(defrecord ClientRepresentative [name client])
+(defrecord AgedItem [item])
 
-(defrule is-important
-  "Find important support requests."
-  [SupportRequest (= :high level)]
+(defrecord QualityAssurance [item])
+
+
+;; Rules
+
+(defrule age-items-still-in-sell-by
+  "Age an item not passed is sell-in day."
+  [?item <- Item
+   (< -1 sell-in)]
   =>
-  (println "High support requested!"))
+  (insert! (->AgedItem (-> ?item
+                           (update :sell-in dec)
+                           (update :quality dec)))))
 
-(defrule notify-client-rep
-  "Find the client representative and request support."
-  [SupportRequest (= ?client client)]
-  [ClientRepresentative (= ?client client)  (= ?name name)]
+
+(defrule passed-sell-by-quality-degrades-faster
+  "Once the sell by date has passed, Quality degrades twice as fast."
+  [?item <- Item
+   (< sell-in 0)]
   =>
-  (println "Notify" ?name "that"
-           ?client "has a new support request!"))
+  (insert! (->AgedItem (-> ?item
+                           (update :sell-in dec)
+                           (update :quality - 2)))))
 
-(-> (mk-session 'gilded-rose.core)
-    (insert (->ClientRepresentative "Alice" "Acme")
-            (->SupportRequest "Acme" :high))
-    (fire-rules))
+
+(defrule quality-from-zero-check
+  "The Quality of an item is never negative."
+  [?item <- AgedItem [{{quality :quality} :item}]
+   (= ?quality quality)]
+  [:test (<= 0 ?quality)]
+  =>
+  (insert! (->QualityAssurance (:item ?item))))
+
+
+(defrule quality-cannot-be-less-than-zero
+  "The Quality of an item is never negative."
+  [?item <- AgedItem [{{quality :quality} :item}]
+   (= ?quality quality)]
+  [:test (< ?quality 0)]
+  =>
+  (insert! (->QualityAssurance (assoc (:item ?item) :quality) 0)))
+
+
+;; Queries
+
+(defquery completed-items
+  "Query to find all completely aged items."
+  []
+  [?item <- QualityAssurance])
