@@ -21,12 +21,21 @@
                  get-item
                  (select-keys [:quality :sell-in]))))))
 
-  (testing "Items passed their sell-by will degrade in quality twice as fast."
+  (testing "Items on their sell-by will degrade in quality twice as fast."
     (let [session (-> (rules/mk-session 'gilded-rose.core)
                       (rules/insert (->Item "Doohickey" 0 5 :normal))
                       (rules/fire-rules))
           results (rules/query session completed-items)]
       (is (= {:quality 3 :sell-in -1}
+             (-> (first results)
+                 get-item
+                 (select-keys [:quality :sell-in]))))))
+  (testing "Items passed their sell-by will degrade in quality twice as fast."
+    (let [session (-> (rules/mk-session 'gilded-rose.core)
+                      (rules/insert (->Item "Doohickey" -1 5 :normal))
+                      (rules/fire-rules))
+          results (rules/query session completed-items)]
+      (is (= {:quality 3 :sell-in -2}
              (-> (first results)
                  get-item
                  (select-keys [:quality :sell-in]))))))
@@ -74,12 +83,12 @@
 
 (deftest sulfuras-test
   (testing "Sulfuras, being a legendary item, never has to be sold or
-           decreases in quality.")
-  (let [session (-> (rules/mk-session 'gilded-rose.core)
-                    (rules/insert (->Item "Sulfuras" 1 50 :special))
-                    (rules/fire-rules))
-        results (rules/query session completed-items)]
-    (is (= {:quality 50 :sell-in 1}
-           (-> (first results)
-               get-item
-               (select-keys [:quality :sell-in]))))))
+           decreases in quality."
+    (let [session (-> (rules/mk-session 'gilded-rose.core)
+                      (rules/insert (->Item "Sulfuras" 1 50 :special))
+                      (rules/fire-rules))
+          results (rules/query session completed-items)]
+      (is (= {:quality 50 :sell-in 1}
+             (-> (first results)
+                 get-item
+                 (select-keys [:quality :sell-in])))))))
