@@ -28,7 +28,8 @@
 (defrule passed-sell-by-quality-degrades-faster
   "Once the sell by date has passed, Quality degrades twice as fast."
   [?item <- Item
-   (<= sell-in 0)]
+   (<= sell-in 0)
+   (= :normal type)]
   =>
   (insert! (->AgedItem (-> ?item
                            (update :sell-in dec)
@@ -52,6 +53,26 @@
    (= "Sulfuras" name)]
   =>
   (insert! (->AgedItem ?item)))
+
+
+(defrule backstage-pass-item
+  "“Backstage Passes”, like Aged Brie, increases in quality as its sell-in
+  value approaches; quality increases by 2 when there are 10 days or less and
+  by 3 when there are 5 days or less but quality drops to 0 after the
+  concert."
+  [?item <- Item
+   (= :backstage-pass type)
+   (= ?quality quality)
+   (= ?sell-in sell-in)]
+  =>
+  (let [aged-quality (cond
+                      (< 10 ?sell-in) (inc ?quality)
+                      (< 5 ?sell-in) (+ 2 ?quality)
+                      (< 0 ?sell-in) (+ 3 ?quality)
+                      :else 0)]
+    (insert! (->AgedItem (-> ?item
+                             (update :sell-in dec)
+                             (assoc :quality aged-quality))))))
 
 
 (defrule quality-from-zero-check

@@ -92,3 +92,56 @@
              (-> (first results)
                  get-item
                  (select-keys [:quality :sell-in])))))))
+
+(deftest backstage-passes-test
+  (testing "Backstage Passes increase in quality as sell-in date approaches."
+    (let [session (-> (rules/mk-session 'gilded-rose.core)
+                      (rules/insert (->Item "Backstage Pass to TANSTAAFL Concert" 15 3 :backstage-pass))
+                      (rules/fire-rules))
+          results (rules/query session completed-items)]
+      (is (= {:quality 4 :sell-in 14}
+             (-> (first results)
+                 get-item
+                 (select-keys [:quality :sell-in]))))))
+
+  (testing "Backstage Passes increase in quality by two within ten days of
+           concert."
+    (let [session (-> (rules/mk-session 'gilded-rose.core)
+                      (rules/insert (->Item "Backstage Pass to TANSTAAFL Concert" 10 3 :backstage-pass))
+                      (rules/fire-rules))
+          results (rules/query session completed-items)]
+      (is (= {:quality 5 :sell-in 9}
+             (-> (first results)
+                 get-item
+                 (select-keys [:quality :sell-in]))))))
+
+  (testing "Backstage Passes increase in quality by three within five days of
+           concert."
+    (let [session (-> (rules/mk-session 'gilded-rose.core)
+                      (rules/insert (->Item "Backstage Pass to TANSTAAFL Concert" 5 3 :backstage-pass))
+                      (rules/fire-rules))
+          results (rules/query session completed-items)]
+      (is (= {:quality 6 :sell-in 4}
+             (-> (first results)
+                 get-item
+                 (select-keys [:quality :sell-in]))))))
+
+  (testing "Maximum quality still applies to Backstage Passes."
+    (let [session (-> (rules/mk-session 'gilded-rose.core)
+                      (rules/insert (->Item "Backstage Pass to TANSTAAFL Concert" 2 49 :backstage-pass))
+                      (rules/fire-rules))
+          results (rules/query session completed-items)]
+      (is (= {:quality 50 :sell-in 1}
+             (-> (first results)
+                 get-item
+                 (select-keys [:quality :sell-in]))))))
+
+  (testing "Backstage Passes have no value passed sell-in date."
+    (let [session (-> (rules/mk-session 'gilded-rose.core)
+                      (rules/insert (->Item "Backstage Pass to TANSTAAFL Concert" 0 28 :backstage-pass))
+                      (rules/fire-rules))
+          results (rules/query session completed-items)]
+      (is (= {:quality 0 :sell-in -1}
+             (-> (first results)
+                 get-item
+                 (select-keys [:quality :sell-in])))))))
