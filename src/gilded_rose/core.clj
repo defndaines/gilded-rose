@@ -4,10 +4,14 @@
 
 ;; Records
 
+;; Any item for sale in the store at the end of the day.
 (defrecord Item [name sell-in quality type])
 
+;; Items which have been aged for the day.
 (defrecord AgedItem [item])
 
+;; Items that have passed the quality assurance checks. Represent final output
+;; of system.
 (defrecord QualityAssurance [item])
 
 
@@ -16,7 +20,7 @@
 (defrule age-items-still-in-sell-by
   "Age an item not passed is sell-in day."
   [?item <- Item
-   (< 0 sell-in)
+   (pos? sell-in)
    (= :normal type)]
   =>
   (insert! (->AgedItem (-> ?item
@@ -65,9 +69,9 @@
    (= ?sell-in sell-in)]
   =>
   (let [aged-quality (cond
-                      (< 10 ?sell-in) (inc ?quality)
-                      (< 5 ?sell-in) (+ 2 ?quality)
-                      (< 0 ?sell-in) (+ 3 ?quality)
+                      (< 10 ?sell-in) (+ 1 ?quality)
+                      (<  5 ?sell-in) (+ 2 ?quality)
+                      (<  0 ?sell-in) (+ 3 ?quality)
                       :else 0)]
     (insert! (->AgedItem (-> ?item
                              (update :sell-in dec)
@@ -80,7 +84,7 @@
    (= :conjured type)
    (= ?sell-in sell-in)]
   =>
-  (let [factor (if (< 0 ?sell-in) 2 4)]
+  (let [factor (if (pos? ?sell-in) 2 4)]
     (insert! (->AgedItem (-> ?item
                              (update :sell-in dec)
                              (update :quality - factor))))))
@@ -99,7 +103,7 @@
   "The Quality of an item is never negative."
   [?item <- AgedItem [{{quality :quality} :item}]
    (= ?quality quality)]
-  [:test (< ?quality 0)]
+  [:test (neg? ?quality)]
   =>
   (insert! (->QualityAssurance (assoc (:item ?item) :quality 0))))
 
