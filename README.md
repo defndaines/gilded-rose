@@ -5,8 +5,8 @@ A Clojure implementation of the Gilded Rose kata
 using [clara-rules](https://github.com/cerner/clara-rules).
 
 I think I first came across Jim Weirich's
-[version](https://github.com/jimweirich/gilded_rose_kata), and I'll likely
-steal test ideas from there.
+[version](https://github.com/jimweirich/gilded_rose_kata), and I've stolen test
+ideas from there.
 
 
 ## The Kata
@@ -16,7 +16,27 @@ Transcribed in [KATA.md](KATA.md)
 
 ## Usage
 
-FIXME
+This project is really just set up to be exercised by tests.
+```
+lein test gilded-rose.core-test
+
+Ran 6 tests containing 18 assertions.
+0 failures, 0 errors.
+```
+
+The tests invoke a session and create items to be aged with the following
+pattern:
+```clojure
+(let [session (-> (rules/mk-session 'gilded-rose.core)
+                  (rules/insert
+                    (->Item "Doohickey" 3 5 :normal)
+                    (->Item "Sulfuras" 0 50 :special)
+                    (->Item "Backstage Pass to TANSTAAFL Concert" 3 5 :backstage-pass)
+                    (->Item "Aged Brie" 1 10 :special))
+                  (rules/fire-rules))
+      results (rules/query session completed-items)]
+  ,,,)
+```
 
 
 ## License
