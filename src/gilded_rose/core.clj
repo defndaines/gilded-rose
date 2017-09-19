@@ -18,7 +18,6 @@
   [?item <- Item
    (< 0 sell-in)
    (= :normal type)]
-
   =>
   (insert! (->AgedItem (-> ?item
                            (update :sell-in dec)
@@ -73,6 +72,18 @@
     (insert! (->AgedItem (-> ?item
                              (update :sell-in dec)
                              (assoc :quality aged-quality))))))
+
+
+(defrule conjured-item
+  "Conjured items degrade in quality twice as fast as normal items."
+  [?item <- Item
+   (= :conjured type)
+   (= ?sell-in sell-in)]
+  =>
+  (let [factor (if (< 0 ?sell-in) 2 4)]
+    (insert! (->AgedItem (-> ?item
+                             (update :sell-in dec)
+                             (update :quality - factor))))))
 
 
 (defrule quality-from-zero-check

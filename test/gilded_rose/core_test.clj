@@ -166,3 +166,37 @@
                   (map get-item)
                   (map #(select-keys % [:name :quality :sell-in]))
                   set))))))
+
+
+(deftest conjured-item-test
+  (testing "Conjured items degrade in quality twice as fast as normal items."
+    (let [session (-> (rules/mk-session 'gilded-rose.core)
+                      (rules/insert (->Item "Conjured Mana Cake" 5 8 :conjured))
+                      (rules/fire-rules))
+          results (rules/query session completed-items)]
+      (is (= {:quality 6 :sell-in 4}
+             (-> (first results)
+                 get-item
+                 (select-keys [:quality :sell-in]))))) )
+
+  (testing "Conjured items degrade in quality twice as fast as normal items,
+           on their sell date."
+    (let [session (-> (rules/mk-session 'gilded-rose.core)
+                      (rules/insert (->Item "Conjured Mana Cake" 0 8 :conjured))
+                      (rules/fire-rules))
+          results (rules/query session completed-items)]
+      (is (= {:quality 4 :sell-in -1}
+             (-> (first results)
+                 get-item
+                 (select-keys [:quality :sell-in]))))))
+
+  (testing "Conjured items degrade in quality twice as fast as normal items,
+           passed their sell date."
+    (let [session (-> (rules/mk-session 'gilded-rose.core)
+                      (rules/insert (->Item "Conjured Mana Cake" -2 7 :conjured))
+                      (rules/fire-rules))
+          results (rules/query session completed-items)]
+      (is (= {:quality 3 :sell-in -3}
+             (-> (first results)
+                 get-item
+                 (select-keys [:quality :sell-in])))))))
