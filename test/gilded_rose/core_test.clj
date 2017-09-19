@@ -145,3 +145,24 @@
              (-> (first results)
                  get-item
                  (select-keys [:quality :sell-in])))))))
+
+
+(deftest multiple-items-test
+  (testing "Multiple items can age at the same time."
+    (let [session (-> (rules/mk-session 'gilded-rose.core)
+                      (rules/insert
+                        (->Item "Doohickey" 3 5 :normal)
+                        (->Item "Sulfuras" 0 50 :special)
+                        (->Item "Backstage Pass to TANSTAAFL Concert" 3 5 :backstage-pass)
+                        (->Item "Aged Brie" 1 10 :special))
+                      (rules/fire-rules))
+          results (rules/query session completed-items)]
+      (is (= 4 (count results)))
+      (is (= #{{:name "Doohickey" :quality 4 :sell-in 2}
+               {:name "Sulfuras" :quality 50 :sell-in 0}
+               {:name "Backstage Pass to TANSTAAFL Concert" :quality 8 :sell-in 2}
+               {:name "Aged Brie" :quality 11 :sell-in 0}}
+             (->> results
+                  (map get-item)
+                  (map #(select-keys % [:name :quality :sell-in]))
+                  set))))))
